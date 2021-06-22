@@ -2,6 +2,7 @@ import sqlite3
 import csv
 from io import StringIO
 import pandas
+import datetime
 
 def combo_multiplier(note, total):
     if note >= total * 9 // 10:
@@ -24,6 +25,26 @@ def combo_multiplier(note, total):
 def active(time, period, uptime):
     return time >= period and time % period < uptime
 
+def is_flick(note):
+    return note['status'] == 1 or note['status'] == 2
+
+def is_slide(note):
+    return note['type'] == 3
+
+long_end = [False] * 5
+def is_long(note):
+    pos = int(note['finishPos']) - 1
+    if note['type'] == 2:
+        long_end[pos] = not long_end[pos]
+        return True
+    elif is_flick(note) and long_end[pos]:
+        long_end[pos] = False
+        return True
+    else:
+        return False
+
+
+
 master_con = sqlite3.connect('db/master.db')
 cur = master_con.cursor()
 diff_id = [4, 5, 101]
@@ -35,17 +56,24 @@ req = cur.execute(  'SELECT ld.id, music_data.name, live_detail.difficulty_type,
                     'INNER JOIN live_detail '
                     'ON ld.id = live_detail.live_data_id '
                     'AND live_detail.difficulty_type IN (' + ', '.join(map(str,diff_id)) + ') '
-                    'AND NOT EXISTS ('
+                    'AND ( NOT EXISTS ('
                     'SELECT other.id '
-                    'FROM live_data AS other '
+                    'FROM live_data AS other, music_data md1, music_data md2 '
                     'WHERE other.id < ld.id '
-                    'AND other.music_data_id = ld.music_data_id) ')
+                    'AND other.music_data_id = md1.id '
+                    'AND ld.music_data_id = md2.id '
+                    'AND md1.name = md2.name) '
+                    'OR music_data.name = \'いとしーさー♥\')')
 
-
+now = datetime.datetime.now()
+print(now.strftime('%Y%m%d-%H%M%S'))
 
 #data = pandas.DataFrame(index = ['Song Name', 'Notes'])
 data = []
-timers = [[4.5,7], [6, 9], [7.5, 11], [7.5, 12]]
+timers = [[3, 4], [4.5, 7], [6, 9], [7.5, 11], [9, 13], [4.5, 6], [6, 7], [7.5, 9], [9, 11], [7.5, 12]]
+act_timers = [[6, 7], [7.5, 9], [9, 11]]
+note_types = ['long', 'flick', 'slide']
+verifier = {'long': is_long, 'flick': is_flick, 'slide': is_slide}
 
 with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
     myfile = csv.writer(fp)
@@ -65,7 +93,7 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
             score_req = score_cur.execute("SELECT data FROM blobs WHERE name = ?", (score_name,))
             score = None
             for s in score_req:
-                print('found score')
+                # print('found score')
                 enc_score = s[0]
                 score = enc_score.decode('utf-8')
                 score_ifile = StringIO(score)
@@ -75,18 +103,37 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
                 note_count = score_data.shape[0] - 3
                 song_data = {'Song Name': song_name, 'Song id': song_id, 'Notes': note_count, 'Difficulty': diff_names[diff_type], 'Level': diff}
                 skill_uptime = [0] * len(timers)
+                act_skill_uptime = {}
+                for type in note_types:
+                    act_skill_uptime[type] = [0] * len(act_timers)
                 # Problematic loop?
+                skip_notes = 0
                 for index, note in score_data.iterrows():
-                    if note['type'] < 90:
-                        for index, timer in enumerate(timers):
+                    if note['type'] < 10:
+                        for idx, timer in enumerate(timers):
                             if active(note['sec'], timer[1], timer[0]):
-                                skill_uptime[index] += combo_multiplier(note['id'] - 2, note_count)
+                                skill_uptime[idx] += combo_multiplier(note['id'] - skip_notes, note_count)
+                        for type in note_types:
+                            if verifier[type](note):
+                                for idx, timer in enumerate(act_timers):
+                                    if active(note['sec'], timer[1], timer[0]):
+                                        act_skill_uptime[type][idx] += combo_multiplier(note['id'] - skip_notes, note_count)
+                    else:
+                        skip_notes += 1
+                        if note['type'] == 100:
+                            note_count = int(note['status'])
+                            song_data['Notes'] = note_count
 
                 for index, timer in enumerate(timers):
                     song_data['{}/{}s'.format(timer[0], timer[1])] = skill_uptime[index] / note_count / 1.41
+                for type in note_types:
+                    for index, timer in enumerate(act_timers):
+                        song_data['{}/{}s {}'.format(timer[0], timer[1], type)] = act_skill_uptime[type][index] / note_count / 1.41
                 data.append(song_data)
         except sqlite3.OperationalError:
             print('File ' + str(song_id) + ' not found')
 
 processed_data = pandas.DataFrame(data)
-processed_data.to_csv('level_data.csv')
+now = datetime.datetime.now()
+print(now.strftime('%Y%m%d-%H%M%S'))
+processed_data.to_csv('level_data' + now.strftime('%Y%m%d-%H%M%S') + '.csv')

@@ -131,3 +131,5 @@ dmypy.json
 # My project
 db/**
 myscores/**
+*.csv
+*.xlsx
