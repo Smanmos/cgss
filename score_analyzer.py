@@ -45,7 +45,7 @@ def is_long(note):
 
 
 
-master_con = sqlite3.connect('db/master.db')
+master_con = sqlite3.connect('chihiro/data/db/master.db')
 cur = master_con.cursor()
 diff_id = [4, 5, 101]
 diff_names = {4: "MASTER", 5: "MASTER+", 101: "LEGACY"}
@@ -56,14 +56,14 @@ req = cur.execute(  'SELECT ld.id, music_data.name, live_detail.difficulty_type,
                     'INNER JOIN live_detail '
                     'ON ld.id = live_detail.live_data_id '
                     'AND live_detail.difficulty_type IN (' + ', '.join(map(str,diff_id)) + ') '
-                    'AND ( NOT EXISTS ('
+                    'WHERE ( NOT EXISTS ('
                     'SELECT other.id '
                     'FROM live_data AS other, music_data md1, music_data md2 '
                     'WHERE other.id < ld.id '
+                    'AND other.difficulty_5 <> 0 '
                     'AND other.music_data_id = md1.id '
                     'AND ld.music_data_id = md2.id '
-                    'AND md1.name = md2.name) '
-                    'OR music_data.name = \'いとしーさー♥\')')
+                    'AND md1.name = md2.name))')
 
 now = datetime.datetime.now()
 print(now.strftime('%Y%m%d-%H%M%S'))
@@ -84,7 +84,7 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
         diff = level_data[3]
         if song_id >= 1000:
             continue
-        score_db = 'db/musicscores/musicscores_m{:03d}.db'.format(song_id)
+        score_db = 'chihiro/data/musicscores/musicscores_m{:03d}.db'.format(song_id)
         score_con = sqlite3.connect(score_db)
         score_cur = score_con.cursor()
         print(song_id, diff_type)
@@ -109,7 +109,7 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
                 # Problematic loop?
                 skip_notes = 0
                 for index, note in score_data.iterrows():
-                    if note['type'] < 10:
+                    if note['type'] <= 3:
                         for idx, timer in enumerate(timers):
                             if active(note['sec'], timer[1], timer[0]):
                                 skill_uptime[idx] += combo_multiplier(note['id'] - skip_notes, note_count)
