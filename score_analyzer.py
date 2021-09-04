@@ -49,7 +49,8 @@ master_con = sqlite3.connect('chihiro/data/db/master.db')
 cur = master_con.cursor()
 diff_id = [4, 5, 101]
 diff_names = {4: "MASTER", 5: "MASTER+", 101: "LEGACY"}
-req = cur.execute(  'SELECT ld.id, music_data.name, live_detail.difficulty_type, live_detail.level_vocal '
+types = {1: "Cu", 2: "Co", 3: "Pa", 4: "All"}
+req = cur.execute(  'SELECT ld.id, music_data.name, live_detail.difficulty_type, live_detail.level_vocal, ld.type '
                     'FROM music_data '
                     'INNER JOIN live_data AS ld '
                     'ON ld.music_data_id = music_data.id '
@@ -82,6 +83,7 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
         song_name = level_data[1]
         diff_type = level_data[2]
         diff = level_data[3]
+        song_type = level_data[4]
         if song_id >= 1000:
             continue
         score_db = 'chihiro/data/musicscores/musicscores_m{:03d}.db'.format(song_id)
@@ -101,7 +103,7 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
                 if song_id == 1:
                     print(score_data)
                 note_count = score_data.shape[0] - 3
-                song_data = {'Song Name': song_name, 'Song id': song_id, 'Notes': note_count, 'Difficulty': diff_names[diff_type], 'Level': diff}
+                song_data = {'Song Name': song_name, 'Song id': song_id, 'Notes': note_count, 'Difficulty': diff_names[diff_type], 'Type': types[song_type] 'Level': diff}
                 skill_uptime = [0] * len(timers)
                 act_skill_uptime = {}
                 for type in note_types:
