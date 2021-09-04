@@ -103,7 +103,7 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
                 if song_id == 1:
                     print(score_data)
                 note_count = score_data.shape[0] - 3
-                song_data = {'Song Name': song_name, 'Song id': song_id, 'Notes': note_count, 'Difficulty': diff_names[diff_type], 'Type': types[song_type] 'Level': diff}
+                song_data = {'Song Name': song_name, 'Song id': song_id, 'Notes': note_count, 'Difficulty': diff_names[diff_type], 'Type': types[song_type], 'Level': diff}
                 skill_uptime = [0] * len(timers)
                 act_skill_uptime = {}
                 for type in note_types:
