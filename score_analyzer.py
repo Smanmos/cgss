@@ -22,8 +22,8 @@ def combo_multiplier(note, total):
     else:
         return 1
 
-def active(time, period, uptime):
-    return time >= period and time % period < uptime
+def active(time, period, uptime, last_note):
+    return time >= period and time % period < uptime and time // period * period <= last_note - 3
 
 def is_flick(note):
     return note['status'] == 1 or note['status'] == 2
@@ -95,7 +95,6 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
             score_req = score_cur.execute("SELECT data FROM blobs WHERE name = ?", (score_name,))
             score = None
             for s in score_req:
-                # print('found score')
                 enc_score = s[0]
                 score = enc_score.decode('utf-8')
                 score_ifile = StringIO(score)
@@ -110,15 +109,22 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
                     act_skill_uptime[type] = [0] * len(act_timers)
                 # Problematic loop?
                 skip_notes = 0
+                last_note = 0
+                for i in range(score_data.shape[0]):
+                    note = score_data.iloc[score_data.shape[0]-1-i]
+                    #print('Note:', note)
+                    if note['type'] <= 3:
+                        last_note = note['sec']
+                        break
                 for index, note in score_data.iterrows():
                     if note['type'] <= 3:
                         for idx, timer in enumerate(timers):
-                            if active(note['sec'], timer[1], timer[0]):
+                            if active(note['sec'], timer[1], timer[0], last_note):
                                 skill_uptime[idx] += combo_multiplier(note['id'] - skip_notes, note_count)
                         for type in note_types:
                             if verifier[type](note):
                                 for idx, timer in enumerate(act_timers):
-                                    if active(note['sec'], timer[1], timer[0]):
+                                    if active(note['sec'], timer[1], timer[0], last_note):
                                         act_skill_uptime[type][idx] += combo_multiplier(note['id'] - skip_notes, note_count)
                     else:
                         skip_notes += 1
