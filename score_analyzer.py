@@ -144,4 +144,4 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
 processed_data = pandas.DataFrame(data)
 now = datetime.datetime.now()
 print(now.strftime('%Y%m%d-%H%M%S'))
-processed_data.to_csv('level_data' + now.strftime('%Y%m%d-%H%M%S') + '.csv')
+processed_data.to_csv('level_data' + now.strftime('%Y%m%d-%H%M%S') + '.csv', encoding='utf-8-sig')
