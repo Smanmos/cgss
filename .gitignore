@@ -132,5 +132,3 @@ dmypy.json
 db/*
 myscores/*
 chihiro/*
-*.csv
-*.xlsx
