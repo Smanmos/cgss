@@ -26,15 +26,15 @@ def active(time, period, uptime, last_note):
     return time >= period and time % period < uptime and time // period * period <= last_note - 3
 
 def is_flick(note):
-    return note['status'] == 1 or note['status'] == 2
+    return note.status == 1 or note.status == 2
 
 def is_slide(note):
-    return note['type'] == 3
+    return note.type == 3
 
 long_end = [False] * 5
 def is_long(note):
-    pos = int(note['finishPos']) - 1
-    if note['type'] == 2:
+    pos = int(note.finishPos) - 1
+    if note.type == 2:
         long_end[pos] = not long_end[pos]
         return True
     elif is_flick(note) and long_end[pos]:
@@ -116,20 +116,20 @@ with open('level_data.csv', 'w', encoding = 'utf-8') as fp:
                     if note['type'] <= 3:
                         last_note = note['sec']
                         break
-                for index, note in score_data.iterrows():
-                    if note['type'] <= 3:
+                for note in score_data.itertuples():
+                    if note.type <= 3:
                         for idx, timer in enumerate(timers):
-                            if active(note['sec'], timer[1], timer[0], last_note):
-                                skill_uptime[idx] += combo_multiplier(note['id'] - skip_notes, note_count)
+                            if active(note.sec, timer[1], timer[0], last_note):
+                                skill_uptime[idx] += combo_multiplier(note.id - skip_notes, note_count)
                         for type in note_types:
                             if verifier[type](note):
                                 for idx, timer in enumerate(act_timers):
-                                    if active(note['sec'], timer[1], timer[0], last_note):
-                                        act_skill_uptime[type][idx] += combo_multiplier(note['id'] - skip_notes, note_count)
+                                    if active(note.sec, timer[1], timer[0], last_note):
+                                        act_skill_uptime[type][idx] += combo_multiplier(note.id - skip_notes, note_count)
                     else:
                         skip_notes += 1
-                        if note['type'] == 100:
-                            note_count = int(note['status'])
+                        if note.type == 100:
+                            note_count = int(note.status)
                             song_data['Notes'] = note_count
 
                 for index, timer in enumerate(timers):
